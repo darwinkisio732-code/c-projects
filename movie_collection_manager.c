@@ -1,287 +1,255 @@
 #include <stdio.h>
 #include <string.h>
 
-struct Movie
-{
-    char title[100];
-    char director[50];
+#define MAX_MOVIES 10
+#define TITLE_LEN 100
+#define NAME_LEN 50
+#define GENRE_LEN 30
+
+typedef struct {
+    char title[TITLE_LEN];
+    char director[NAME_LEN];
     int year;
     float rating;
-    char genre[30];
-};
+    char genre[GENRE_LEN];
+} Movie;
 
-void inputMovieDetails(struct Movie s[], int num_of_movies)
-{
-    printf("\n==========INPUT MOVIE DETAILS==========");
-    for (int i = 0; i < num_of_movies; i++)
-    {
-        printf("\n======Movie %d======", i + 1);
+// Helper to safely read string inputs and strip newlines
+void read_string(char *buffer, int size) {
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+}
 
-        printf("\nTitle: ");
-        fgets(s[i].title, sizeof(s[i].title), stdin);
-        s[i].title[strcspn(s[i].title, "\n")] = 0;
+void inputMovieDetails(Movie movies[], int *count) {
+    int to_add;
+    printf("\nHow many movies would you like to add? ");
+    if (scanf("%d", &to_add) != 1 || to_add <= 0) {
+        printf("Invalid number!\n");
+        return;
+    }
+    getchar(); // Clear buffer newline
 
-        printf("\nDirector: ");
-        fgets(s[i].director, sizeof(s[i].director), stdin);
-        s[i].director[strcspn(s[i].director, "\n")] = 0;
+    if (*count + to_add > MAX_MOVIES) {
+        printf("Cannot add %d movies. Space remaining: %d\n", to_add, MAX_MOVIES - *count);
+        return;
+    }
 
-        printf("\nYear: ");
-        scanf("%d", &s[i].year);
+    for (int i = 0; i < to_add; i++) {
+        int idx = *count;
+        printf("\n====== Movie %d ======\n", idx + 1);
 
-        printf("\nRating: ");
-        scanf("%f", &s[i].rating);
-        getchar();
+        printf("Title: ");
+        read_string(movies[idx].title, TITLE_LEN);
 
-        printf("\nGenre: ");
-        fgets(s[i].genre, sizeof(s[i].genre), stdin);
-        s[i].genre[strcspn(s[i].genre, "\n")] = 0;
+        printf("Director: ");
+        read_string(movies[idx].director, NAME_LEN);
+
+        printf("Year: ");
+        scanf("%d", &movies[idx].year);
+
+        printf("Rating (0.0 - 10.0): ");
+        scanf("%f", &movies[idx].rating);
+        getchar(); // Clear buffer newline
+
+        printf("Genre: ");
+        read_string(movies[idx].genre, GENRE_LEN);
+
+        (*count)++;
     }
 }
 
-void displayMovieDetails(struct Movie s[], int num_of_movies)
-{
-    if (num_of_movies > 0)
-    {
-        printf("\n\n======================MOVIE DETAILS======================");
-        printf("\n%-15s %-12s %-10s %-10s %-15s", "Title", "Director", "Year", "Rating", "Genre");
-        printf("\n-------------------------------------------------------------");
-        for (int i = 0; i < num_of_movies; i++)
-        {
-            printf("\n%-15s %-12s %-10d %-10.1f %-15s",
-                   s[i].title,
-                   s[i].director,
-                   s[i].year,
-                   s[i].rating,
-                   s[i].genre);
+void displayMovieDetails(const Movie movies[], int count) {
+    if (count == 0) {
+        printf("\nNo Movies Found! Add Movies to view them.\n");
+        return;
+    }
+
+    printf("\n================================ MOVIE DETAILS ================================\n");
+    printf("%-25s %-20s %-8s %-8s %-15s\n", "Title", "Director", "Year", "Rating", "Genre");
+    printf("-------------------------------------------------------------------------------\n");
+    for (int i = 0; i < count; i++) {
+        printf("%-25s %-20s %-8d %-8.1f %-15s\n",
+               movies[i].title, movies[i].director, movies[i].year, movies[i].rating, movies[i].genre);
+    }
+}
+
+float findAverageRating(const Movie movies[], int count) {
+    if (count == 0) return 0.0f;
+
+    float total = 0.0f;
+    for (int i = 0; i < count; i++) {
+        total += movies[i].rating;
+    }
+    return total / count;
+}
+
+int findHighestRated(const Movie movies[], int count) {
+    if (count == 0) return -1;
+
+    int highestIdx = 0;
+    for (int i = 1; i < count; i++) {
+        if (movies[i].rating > movies[highestIdx].rating) {
+            highestIdx = i;
         }
     }
-    else
-    {
-        printf("\nNo Movies Found! Add Movies to view them.");
-    }
+    return highestIdx;
 }
 
-float findAverageRating(struct Movie s[], int num_of_movies)
-{
-    float averageRating = 0;
-    float total = 0;
+int findOldestMovie(const Movie movies[], int count) {
+    if (count == 0) return -1;
 
-    for (int i = 0; i < num_of_movies; i++)
-    {
-        total += s[i].rating;
-    }
-    averageRating = (num_of_movies > 0) ? (total / num_of_movies) : 0.0f;
-
-    return averageRating;
-}
-
-int findHighestRated(struct Movie s[], int num_of_movie)
-{
-    int highestRatedIndex = 0;
-
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (s[i].rating > s[highestRatedIndex].rating)
-        {
-            highestRatedIndex = i;
+    int oldestIdx = 0;
+    for (int i = 1; i < count; i++) {
+        if (movies[i].year < movies[oldestIdx].year) {
+            oldestIdx = i;
         }
     }
-
-    return highestRatedIndex;
+    return oldestIdx;
 }
 
-int findOldestMovie(struct Movie s[], int num_of_movie)
-{
-    int oldestIndex = 0;
-
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (s[i].year < s[oldestIndex].year)
-        {
-            oldestIndex = i;
+int countofMoviesPerGenre(const Movie movies[], int count, const char genre[]) {
+    int total = 0;
+    for (int i = 0; i < count; i++) {
+        if (strcasecmp(movies[i].genre, genre) == 0) {
+            total++;
         }
     }
-
-    return oldestIndex;
+    return total;
 }
 
-int countofMoviesPerGenre(struct Movie s[], int num_of_movie, char genre[])
-{
-    int count = 0;
-
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (strcmp(s[i].genre, genre) == 0)
-        {
-            count++;
+void searchMovie(const Movie movies[], int count, const char search[]) {
+    for (int i = 0; i < count; i++) {
+        if (strcasecmp(movies[i].title, search) == 0) {
+            printf("\n====== Movie Details ======");
+            printf("\nTitle:    %s", movies[i].title);
+            printf("\nDirector: %s", movies[i].director);
+            printf("\nYear:     %d", movies[i].year);
+            printf("\nRating:   %.1f", movies[i].rating);
+            printf("\nGenre:    %s\n", movies[i].genre);
+            return;
         }
     }
+    printf("\nMovie Not Found!\n");
+}
 
+void updateMovieRating(Movie movies[], int count, const char search_title[], float new_rating) {
+    if (new_rating < 0.0f || new_rating > 10.0f) {
+        printf("\nInvalid Rating! Must be between 0.0 and 10.0.\n");
+        return;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (strcasecmp(movies[i].title, search_title) == 0) {
+            movies[i].rating = new_rating;
+            printf("\nMovie Rating Updated Successfully!\n");
+            return;
+        }
+    }
+    printf("\nMovie Not Found!\n");
+}
+
+int deleteMovie(Movie movies[], int count, const char search_title[]) {
+    for (int i = 0; i < count; i++) {
+        if (strcasecmp(movies[i].title, search_title) == 0) {
+            // Shift elements to left
+            for (int j = i; j < count - 1; j++) {
+                movies[j] = movies[j + 1];
+            }
+            printf("\nMovie Deleted Successfully!\n");
+            return count - 1;
+        }
+    }
+    printf("\nMovie NOT found!\n");
     return count;
 }
 
-void searchMovie(struct Movie s[], int num_of_movie, char search[])
-{
-    int movieIndex = 0;
-
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (strcmp(s[i].title, search) == 0)
-        {
-            movieIndex = 1;
-            printf("\n\n======Movie Details======");
-            printf("\n--------------------------");
-            printf("\nTitle: %s", s[i].title);
-            printf("\nDirector: %s", s[i].director);
-            printf("\nYear: %d", s[i].year);
-            printf("\nRating: %.1f", s[i].rating);
-            printf("\nGenre: %s", s[i].genre);
-            break;
-        }
-    }
-    if (!movieIndex)
-    {
-        printf("\n\nMovie Not Found!");
-    }
+void print_menu(void) {
+    printf("\n=========== MOVIE MENU ============");
+    printf("\n1. Add Movie");
+    printf("\n2. Display Movies");
+    printf("\n3. Search Movie");
+    printf("\n4. Update Rating");
+    printf("\n5. Delete Movie");
+    printf("\n6. Top Rated Movie");
+    printf("\n7. Oldest Movie");
+    printf("\n8. Movies Per Genre");
+    printf("\n9. Exit");
+    printf("\n\nChoose: ");
 }
 
-void updateMovieRating(struct Movie s[], int num_of_movie, char search_update[], float proposed_rating)
-{
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (strcmp(s[i].title, search_update) == 0)
-        {
-            if (proposed_rating < 0 || proposed_rating > 10.0)
-            {
-                printf("\n\nInvalid Rating!");
-            }
-            else
-            {
-                s[i].rating = proposed_rating;
-                printf("\n\nMovie Rating Updated Successfully!");
-            }
-        }
-    }
-}
-
-int deleteMovie(struct Movie s[], int num_of_movie, char search_delete[])
-{
-    int found = 0;
-    for (int i = 0; i < num_of_movie; i++)
-    {
-        if (strcmp(s[i].title, search_delete) == 0)
-        {
-            found = 1;
-            strcpy(s[i].title, s[i + 1].title);
-            strcpy(s[i].director, s[i + 1].director);
-            s[i].year = s[i + 1].year;
-            s[i].rating = s[i + 1].rating;
-            strcpy(s[i].genre, s[i + 1].genre);
-        }
-    }
-    if (found)
-    {
-        num_of_movie--;
-        printf("\n\nMovie Deleted Successfully!");
-    }
-    else
-    {
-        printf("\nMovie NOT found!");
-    }
-
-    return num_of_movie;
-}
-
-int main()
-{
-    struct Movie movies[10];
+int main(void) {
+    Movie movies[MAX_MOVIES];
     int num_of_movies = 0;
-    char genre[30];
-    int running = 1;
     int choice;
-    char search_update[30];
-    char search_delete[30];
-    char search[30];
+    char query[TITLE_LEN];
     float proposed_rating;
 
-    while (running)
-    {
-        printf("\n\n===========MOVIE MENU============");
-        printf("\n1. Add Movie");
-        printf("\n2. Display Movies");
-        printf("\n3. Serach Movie");
-        printf("\n4. Update Rating");
-        printf("\n5. Delete Movie");
-        printf("\n6. Top Rated Movie");
-        printf("\n7. Oldest Movie");
-        printf("\n8. Movies Per Genre");
-        printf("\n9. Exit");
+    while (1) {
+        print_menu();
 
-        printf("\n\nChoose: ");
-        scanf("%d", &choice);
-        getchar();
+        if (scanf("%d", &choice) != 1) {
+            printf("\nInvalid option. Please enter a number.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+        getchar(); // Clear buffer newline
 
-        switch (choice)
-        {
-        case 1:
-            printf("\nHow many movies? ");
-            scanf("%d", &num_of_movies);
-            getchar();
-
-            inputMovieDetails(movies, num_of_movies);
-            break;
-        case 2:
-            displayMovieDetails(movies, num_of_movies);
-            break;
-        case 3:
-            printf("\nSearch... ");
-            fgets(search, sizeof(search), stdin);
-            search[strcspn(search, "\n")] = 0;
-
-            searchMovie(movies, num_of_movies, search);
-            break;
-        case 4:
-            printf("\nSearch for a Movie: ");
-            fgets(search_update, sizeof(search_update), stdin);
-            search_update[strcspn(search_update, "\n")] = 0;
-
-            printf("\nEnter you Proposed rating: ");
-            scanf("%f", &proposed_rating);
-            getchar();
-
-            updateMovieRating(movies, num_of_movies, search_update, proposed_rating);
-            break;
-        case 5:
-            printf("\nSearch for Movie to delete: ");
-            fgets(search_delete, sizeof(search_delete), stdin);
-            search_delete[strcspn(search_delete, "\n")] = 0;
-
-            deleteMovie(movies, num_of_movies, search_delete);
-
-            num_of_movies = deleteMovie(movies, num_of_movies, search_delete);
-            break;
-        case 6:
-            int highestRated = findHighestRated(movies, num_of_movies);
-            printf("\n\nHighest Rated Movie: %s (%.1f)", movies[highestRated].title, movies[highestRated].rating);
-            break;
-        case 7:
-            int oldestMovie = findOldestMovie(movies, num_of_movies);
-            printf("\n\nOldest Movie: %s - %d", movies[oldestMovie].title, movies[oldestMovie].year);
-            break;
-        case 8:
-            printf("\n\nEnter Genre to count: ");
-            scanf("%s", genre);
-            getchar();
-
-            int movieCount = countofMoviesPerGenre(movies, num_of_movies, genre);
-            printf("\nMovies in %s genre: %d", genre, movieCount);
-            break;
-        case 9:
-            printf("\nGoodbye!");
-            running = 0;
-            break;
-        default:
-            printf("\nInvalid Choice. Try Again!");
+        switch (choice) {
+            case 1:
+                inputMovieDetails(movies, &num_of_movies);
+                break;
+            case 2:
+                displayMovieDetails(movies, num_of_movies);
+                break;
+            case 3:
+                printf("\nSearch Title: ");
+                read_string(query, TITLE_LEN);
+                searchMovie(movies, num_of_movies, query);
+                break;
+            case 4:
+                printf("\nSearch Title to Update: ");
+                read_string(query, TITLE_LEN);
+                printf("Enter Proposed Rating (0.0 - 10.0): ");
+                scanf("%f", &proposed_rating);
+                getchar();
+                updateMovieRating(movies, num_of_movies, query, proposed_rating);
+                break;
+            case 5:
+                printf("\nSearch Title to Delete: ");
+                read_string(query, TITLE_LEN);
+                num_of_movies = deleteMovie(movies, num_of_movies, query);
+                break;
+            case 6: {
+                int highest = findHighestRated(movies, num_of_movies);
+                if (highest != -1) {
+                    printf("\nHighest Rated Movie: %s (%.1f)\n", movies[highest].title, movies[highest].rating);
+                } else {
+                    printf("\nNo movies available.\n");
+                }
+                break;
+            }
+            case 7: {
+                int oldest = findOldestMovie(movies, num_of_movies);
+                if (oldest != -1) {
+                    printf("\nOldest Movie: %s (%d)\n", movies[oldest].title, movies[oldest].year);
+                } else {
+                    printf("\nNo movies available.\n");
+                }
+                break;
+            }
+            case 8: {
+                printf("\nEnter Genre to Count: ");
+                read_string(query, GENRE_LEN);
+                int count = countofMoviesPerGenre(movies, num_of_movies, query);
+                printf("\nMovies in '%s' genre: %d\n", query, count);
+                break;
+            }
+            case 9:
+                printf("\nGoodbye!\n\n");
+                return 0;
+            default:
+                printf("\nInvalid Choice. Try Again!\n");
+                break;
         }
     }
 

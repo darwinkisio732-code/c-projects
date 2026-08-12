@@ -1,111 +1,110 @@
 #include <stdio.h>
 #include <string.h>
 
-struct Employee
-{
-    char name[50];
+#define MAX_EMPLOYEES 10
+#define NAME_LEN 50
+#define DEPT_LEN 30
+
+typedef struct {
+    char name[NAME_LEN];
     float salary;
     int yearsWorked;
-    char department[30];
-};
+    char department[DEPT_LEN];
+} Employee;
 
-void inputEmployeeDetails(struct Employee s[], int num_of_employee)
-{
-    for (int i = 0; i < num_of_employee; i++)
-    {
-        printf("\n=====Employee %d=====", i + 1);
-        printf("\nEnter Name: ");
-        fgets(s[i].name, sizeof(s[i].name), stdin);
-        s[i].name[strcspn(s[i].name, "\n")] = 0;
+// Input handler for reading string lines safely
+void readString(char *buffer, int size) {
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+}
 
-        printf("\nSalary: ");
-        scanf("%f", &s[i].salary);
-        getchar();
+void inputEmployeeDetails(Employee emp[], int count) {
+    for (int i = 0; i < count; i++) {
+        printf("\n===== Employee %d =====\n", i + 1);
+        
+        printf("Enter Name: ");
+        readString(emp[i].name, sizeof(emp[i].name));
 
-        printf("\nYears Worked: ");
-        scanf("%d", &s[i].yearsWorked);
-        getchar();
+        printf("Salary: ");
+        scanf("%f", &emp[i].salary);
+        getchar(); // Clear buffer newline
 
-        printf("\nDepartment: ");
-        fgets(s[i].department, sizeof(s[i].department), stdin);
-        s[i].department[strcspn(s[i].department, "\n")] = 0;
+        printf("Years Worked: ");
+        scanf("%d", &emp[i].yearsWorked);
+        getchar(); // Clear buffer newline
+
+        printf("Department: ");
+        readString(emp[i].department, sizeof(emp[i].department));
     }
 }
 
-void employeeDisplay(struct Employee s[], int num_of_employee)
-{
-    printf("\n==================EMPLOYEES DATA==================");
-    printf("\n%-15s %-10s %-10s %-15s", "Name", "Salary", "Years", "Department");
-    printf("\n--------------------------------------------------");
-    for (int i = 0; i < num_of_employee; i++)
-    {
-        printf("\n%-15s %-10.2f %-10d %-15s", s[i].name, s[i].salary, s[i].yearsWorked, s[i].department);
+void displayEmployees(const Employee emp[], int count) {
+    printf("\n================================ EMPLOYEES DATA ================================\n");
+    printf("%-20s %-12s %-12s %-20s\n", "Name", "Salary ($)", "Years", "Department");
+    printf("--------------------------------------------------------------------------------\n");
+    
+    for (int i = 0; i < count; i++) {
+        printf("%-20s %-12.2f %-12d %-20s\n", 
+               emp[i].name, emp[i].salary, emp[i].yearsWorked, emp[i].department);
     }
 }
 
-float calculateTotalSalary(struct Employee s[], int num_of_employee)
-{
-    int totalSalary = 0;
-
-    for (int i = 0; i < num_of_employee; i++)
-    {
-        totalSalary += s[i].salary;
+float calculateTotalSalary(const Employee emp[], int count) {
+    float totalSalary = 0.0f; // Fixed: int to float
+    for (int i = 0; i < count; i++) {
+        totalSalary += emp[i].salary;
     }
-
     return totalSalary;
 }
 
-int findHighestPaidEmployee(struct Employee s[], int num_of_employee)
-{
-    int highestSalary = 0;
-
-    for (int i = 0; i < num_of_employee; i++)
-    {
-        if (s[i].salary > s[highestSalary].salary)
-        {
-            highestSalary = i;
+int findHighestPaidEmployee(const Employee emp[], int count) {
+    int highestIdx = 0;
+    for (int i = 1; i < count; i++) {
+        if (emp[i].salary > emp[highestIdx].salary) {
+            highestIdx = i;
         }
     }
-
-    return highestSalary;
+    return highestIdx;
 }
 
-int findMostExperienced(struct Employee s[], int num_of_employee)
-{
-    int mostExperienced = 0;
-
-    for (int i = 0; i < num_of_employee; i++)
-    {
-        if (s[i].yearsWorked > s[mostExperienced].yearsWorked)
-        {
-            mostExperienced = i;
+int findMostExperienced(const Employee emp[], int count) {
+    int expIdx = 0;
+    for (int i = 1; i < count; i++) {
+        if (emp[i].yearsWorked > emp[expIdx].yearsWorked) {
+            expIdx = i;
         }
     }
-
-    return mostExperienced;
+    return expIdx;
 }
 
-int main()
-{
-    struct Employee employees[10];
+int main(void) {
+    Employee employees[MAX_EMPLOYEES];
     int num_of_employee;
 
-    printf("\nHow many Employees? ");
-    scanf("%d", &num_of_employee);
+    printf("How many Employees? (Max %d): ", MAX_EMPLOYEES);
+    if (scanf("%d", &num_of_employee) != 1 || num_of_employee <= 0) {
+        printf("Invalid input.\n");
+        return 1;
+    }
     getchar();
 
-    inputEmployeeDetails(employees, num_of_employee);
+    if (num_of_employee > MAX_EMPLOYEES) {
+        printf("Capping input to maximum allowed (%d).\n", MAX_EMPLOYEES);
+        num_of_employee = MAX_EMPLOYEES;
+    }
 
-    employeeDisplay(employees, num_of_employee);
+    inputEmployeeDetails(employees, num_of_employee);
+    displayEmployees(employees, num_of_employee);
 
     float total_salary = calculateTotalSalary(employees, num_of_employee);
-    printf("\nTotal Salary Paid: %.1f", total_salary);
-
     int highestPaid = findHighestPaidEmployee(employees, num_of_employee);
-    printf("\nHighest Paid Employee: %s - %.1f", employees[highestPaid].name, employees[highestPaid].salary);
+    int mostExperienced = findMostExperienced(employees, num_of_employee);
 
-    int mostExperiencedEmployee = findMostExperienced(employees, num_of_employee);
-    printf("\nMost Experienced Employee: %s", employees[mostExperiencedEmployee].name);
+    printf("\n-------------------------------- SUMMARY --------------------------------\n");
+    printf("Total Payroll:            $%.2f\n", total_salary);
+    printf("Highest Paid Employee:    %s ($%.2f)\n", employees[highestPaid].name, employees[highestPaid].salary);
+    printf("Most Experienced:         %s (%d years)\n", employees[mostExperienced].name, employees[mostExperienced].yearsWorked);
+    printf("=========================================================================\n\n");
 
     return 0;
 }

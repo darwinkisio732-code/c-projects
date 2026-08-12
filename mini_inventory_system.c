@@ -1,116 +1,109 @@
 #include <stdio.h>
 #include <string.h>
 
-struct Product
-{
-    char name[50];
+#define MAX_PRODUCTS 10
+#define NAME_LEN 50
+#define CAT_LEN 30
+
+typedef struct {
+    char name[NAME_LEN];
     float price;
     int quantity;
-    char category[30];
-};
+    char category[CAT_LEN];
+} Product;
 
-void inputProducts(struct Product s[], int num_of_products)
-{
-    for (int i = 0; i < num_of_products; i++)
-    {
-        printf("\n======PRODUCT %d======", i + 1);
+// Helper to safely read strings with newline removal
+void read_string(char *buffer, int size) {
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+}
 
-        printf("\nProduct Name: ");
-        fgets(s[i].name, sizeof(s[i].name), stdin);
-        s[i].name[strcspn(s[i].name, "\n")] = 0;
+void inputProducts(Product p[], int count) {
+    for (int i = 0; i < count; i++) {
+        printf("\n====== PRODUCT %d ======\n", i + 1);
 
-        printf("\nPrice: ");
-        scanf("%f", &s[i].price);
+        printf("Product Name: ");
+        read_string(p[i].name, sizeof(p[i].name));
 
-        printf("\nQuantity: ");
-        scanf("%d", &s[i].quantity);
-        getchar();
+        printf("Price: ");
+        scanf("%f", &p[i].price);
 
-        printf("\nProduct Category: ");
-        fgets(s[i].category, sizeof(s[i].category), stdin);
-        s[i].category[strcspn(s[i].category, "\n")] = 0;
+        printf("Quantity: ");
+        scanf("%d", &p[i].quantity);
+        getchar(); // Clear buffer newline
+
+        printf("Product Category: ");
+        read_string(p[i].category, sizeof(p[i].category));
     }
 }
 
-void displayProducts(struct Product s[], int num_of_products)
-{
-    printf("\n\n=================INVENTORY==================");
-    printf("\n%-15s %-10s %-10s %-15s", "Name", "Price", "Qty", "Category");
-    printf("\n----------------------------------------------");
+void displayProducts(const Product p[], int count) {
+    printf("\n================================ INVENTORY ================================\n");
+    printf("%-20s %-12s %-10s %-20s\n", "Name", "Price ($)", "Qty", "Category");
+    printf("---------------------------------------------------------------------------\n");
 
-    for (int i = 0; i < num_of_products; i++)
-    {
-        printf("\n%-15s %-10.2f %-10d %-15s",
-               s[i].name,
-               s[i].price,
-               s[i].quantity,
-               s[i].category);
+    for (int i = 0; i < count; i++) {
+        printf("%-20s %-12.2f %-10d %-20s\n",
+               p[i].name, p[i].price, p[i].quantity, p[i].category);
     }
 }
 
-float calculateTotalValue(struct Product s[], int num_of_products)
-{
-    float total = 0;
-
-    for (int i = 0; i < num_of_products; i++)
-    {
-        total += s[i].price * s[i].quantity;
+float calculateTotalValue(const Product p[], int count) {
+    float total = 0.0f;
+    for (int i = 0; i < count; i++) {
+        total += p[i].price * p[i].quantity;
     }
-
     return total;
 }
 
-int findMostExpensive(struct Product s[], int num_of_products)
-{
+int findMostExpensive(const Product p[], int count) {
     int expensiveIndex = 0;
-
-    for (int i = 0; i < num_of_products; i++)
-    {
-        if (s[i].price > s[expensiveIndex].price)
-        {
+    for (int i = 1; i < count; i++) {
+        if (p[i].price > p[expensiveIndex].price) {
             expensiveIndex = i;
         }
     }
-
     return expensiveIndex;
 }
 
-int findLowestStock(struct Product s[], int num_of_products)
-{
-    int lowestQuantity = 0;
-
-    for (int i = 0; i < num_of_products; i++)
-    {
-        if (s[i].quantity < s[lowestQuantity].quantity)
-        {
-            lowestQuantity = i;
+int findLowestStock(const Product p[], int count) {
+    int lowestIndex = 0;
+    for (int i = 1; i < count; i++) {
+        if (p[i].quantity < p[lowestIndex].quantity) {
+            lowestIndex = i;
         }
     }
-
-    return lowestQuantity;
+    return lowestIndex;
 }
 
-int main()
-{
-    struct Product products[10];
+int main(void) {
+    Product products[MAX_PRODUCTS];
     int num_of_products;
 
-    printf("\n\nHow many Products? ");
-    scanf("%d", &num_of_products);
-    getchar();
+    printf("How many products? (Max %d): ", MAX_PRODUCTS);
+    if (scanf("%d", &num_of_products) != 1 || num_of_products <= 0) {
+        printf("Invalid input.\n");
+        return 1;
+    }
+    getchar(); // Clear buffer newline
+
+    if (num_of_products > MAX_PRODUCTS) {
+        printf("Capping input to maximum capacity (%d).\n", MAX_PRODUCTS);
+        num_of_products = MAX_PRODUCTS;
+    }
 
     inputProducts(products, num_of_products);
-
     displayProducts(products, num_of_products);
 
     float totalValue = calculateTotalValue(products, num_of_products);
-    printf("\n\nTotal Inventory Value: %.2f\n", totalValue);
-
     int mostExpensive = findMostExpensive(products, num_of_products);
-    printf("\n\nThe most Expensive Product Is %s - %f\n", products[mostExpensive].name, products[mostExpensive].price);
+    int lowestStock = findLowestStock(products, num_of_products);
 
-    int least = findLowestStock(products, num_of_products);
-    printf("\n\nThe least Product in quantity is %s - %d", products[least].name, products[least].quantity);
+    printf("\n-------------------------------- SUMMARY --------------------------------\n");
+    printf("Total Inventory Value:    $%.2f\n", totalValue);
+    printf("Most Expensive Product:   %s ($%.2f)\n", products[mostExpensive].name, products[mostExpensive].price);
+    printf("Lowest Stock Level:       %s (%d units remaining)\n", products[lowestStock].name, products[lowestStock].quantity);
+    printf("=========================================================================\n\n");
 
     return 0;
 }
